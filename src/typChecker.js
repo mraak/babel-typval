@@ -3,18 +3,30 @@ import traverse from "@babel/traverse";
 
 const typvals = ["number", "string", "int"];
 
-function checkTypeCompatibility(type1, type2) {
+function checkTypeCompatibility(type1, type2, loc) {
+  let pass = true;
+  let error = "";
   if (type1 === "number") {
-    return type2 === "number" || type2 === "NumericLiteral" || type2 === "int";
+    pass = type2 === "number" || type2 === "NumericLiteral" || type2 === "int";
   }
   if (type1 === "string") {
-    return type2 === "string" || type2 === "StringLiteral";
+    pass = type2 === "string" || type2 === "StringLiteral";
   }
 
   if (type1 === "int") {
-    return type2 === "int";
+    pass = type2 === "int";
   }
-  return true;
+  if (!pass && loc) {
+    error = getErrorMessage(
+      type1,
+      type2,
+      loc.start.line,
+      loc.start.column,
+      loc.identifierName
+    );
+  }
+
+  return { pass, error };
 }
 
 function getErrorMessage(needed, found, line, column, identifier) {
@@ -84,20 +96,13 @@ export function check(code) {
             // console.log(func);
             func.params.forEach((p, i) => {
               // console.log(p, i);
-              const pass = checkTypeCompatibility(p, args[i].type);
+              const { pass, error } = checkTypeCompatibility(
+                p,
+                args[i].type,
+                args[i].loc
+              );
               if (!pass) {
-                const line = args[i].loc.start.line;
-                const col = args[i].loc.start.column;
-                const identifier = args[i].loc.identifierName;
-                console.log(identifier);
-                const err = getErrorMessage(
-                  p,
-                  args[i].type,
-                  line,
-                  col,
-                  identifier
-                );
-                errors.push(err);
+                errors.push(error);
               }
             });
           }
@@ -109,38 +114,42 @@ export function check(code) {
           //const.rightType = get Literal or BinaryExprassion get from vars or get from funcs
           const right = path.node.expression.right;
           let rightType = null;
-          let pass = false;
-          // right is in vars?
-          const rightVar = vars.find(e => e.name === right.name);
-          if (rightVar) {
-            rightType = rightVar.typval ? rightVar.typval.type : rightVar.type;
-            pass = checkTypeCompatibility(leftType, rightType);
-            if (!pass) {
-              const line = right.loc.start.line;
-              const column = right.loc.start.column;
-              const identifier = right.loc.identifierName;
-              const error = getErrorMessage(
+
+          if (right.type === "Identifier") {
+            // x = y
+            // right is in vars?
+            const rightVar = vars.find(e => e.name === right.name);
+            if (rightVar) {
+              rightType = rightVar.typval
+                ? rightVar.typval.type
+                : rightVar.type;
+              const { pass, error } = checkTypeCompatibility(
                 leftType,
                 rightType,
-                line,
-                column,
-                identifier
+                right.loc
               );
+              if (!pass) {
+                errors.push(error);
+              }
+            }
+          } else if (right.type.includes("Literal")) {
+            // x = 4
+            const { pass, error } = checkTypeCompatibility(
+              leftType,
+              right.type,
+              right.loc
+            );
+            if (!pass) {
               errors.push(error);
             }
+          } else if (right.type === "CallExpression") {
+            // x = getX()
+            // right is in funcs?
+            const rightFunc = funcs.find(e => e.name === right.name);
           }
-          // right is a literal or MemberExpression?
-          // right is in funcs?
-          const rightFunc = funcs.find(e => e.name === right.name);
+          // right is a xLiteral or MemberExpression?
 
-          console.log(
-            left.name,
-            leftType,
-            "\t=\t",
-            right.name,
-            rightType,
-            pass
-          );
+          console.log(left.name, leftType, "\t=\t", right.name, rightType);
         }
       } else if (path.node.type === "VariableDeclaration") {
         // variable declarations
