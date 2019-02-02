@@ -4,4 +4,6 @@ Babel plugin for static Javascript type checking. It is based on the https://git
 
 ```
 let i = int`1`
+let a = string`a`
+i = a // compile error
 ```
