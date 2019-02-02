@@ -32,6 +32,7 @@ x = z // must pass
 k = x // must fail: coercion
 y = 4 // must fail: coercion
 
+
 a + y // pass or fail?
 
 a === b // must fail? comparison
@@ -70,17 +71,6 @@ x === y // must fail? comparison
           checked for type safety.
         </p>
 
-        <h2>Function arguments</h2>
-        <textarea
-          style={{ height: 200, width: 500 }}
-          onChange={this.handleCodeChange}
-        >
-          {code}
-        </textarea>
-        <p>Compile Errors:</p>
-        {errors.map(e => (
-          <p key={e.toString()}>{e}</p>
-        ))}
         <h2>Assignment, comparison</h2>
         <textarea
           style={{ height: 300, width: 500 }}
@@ -92,6 +82,22 @@ x === y // must fail? comparison
         {errors1.map(e => (
           <p key={e.toString()}>{e}</p>
         ))}
+        <hr />
+        <h2>(Arrow) Function arguments and return types</h2>
+        <textarea
+          style={{ height: 200, width: 500 }}
+          onChange={this.handleCodeChange}
+        >
+          {code}
+        </textarea>
+        <p>Compile Errors:</p>
+        {errors.map(e => (
+          <p key={e.toString()}>{e}</p>
+        ))}
+        <hr />
+        <h2>Scope</h2>
+        <hr />
+        <h2>Custom Types</h2>
       </>
     );
   }
